@@ -97,7 +97,7 @@ with gr.Blocks(title="Chest CT Cancer Classifier", theme=gr.themes.Soft()) as ap
     submit_btn.click(analyze_ct, inputs=[input_img], outputs=[output_probs, output_text, output_img])
     clear_btn.click(lambda: (None, "⬆️ Upload a CT scan to begin.", None), outputs=[input_img, output_text, output_img])
     
-    gr.Markdown("---\n*Built with PyTorch & ResNet50 | King Trio | ITM 360*")
+    gr.Markdown("---\n*Built with PyTorch & ResNet50 | Gradient Descent (Trio Kings) | ITM 360*")
 
 if __name__ == "__main__":
     print("💻 Launching local interface at: http://localhost:7860")
