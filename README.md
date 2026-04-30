@@ -1,4 +1,4 @@
-# Chest CT Cancer Classifier
+# Chest CT Lung Cancer Classifier
 
 AI-powered lung cancer classification from chest CT scan images using deep learning with explainability through Grad-CAM visualizations.
 
