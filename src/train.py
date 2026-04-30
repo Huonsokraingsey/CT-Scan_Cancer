@@ -12,8 +12,9 @@ def train():
 
     DATA_DIR = "/Users/jayden/Desktop/CT-Scan_Disease/Data/train"    
     DEVICE = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
-    NUM_EPOCHS = 5  # Start with 5 epochs to test speed
+    NUM_EPOCHS = 20
     BATCH_SIZE = 16
+    PATIENCE = 4  # Early stopping patience
     
     print(f"Training on device: {DEVICE}")
 
@@ -25,11 +26,16 @@ def train():
     model = ChestCTClassifier(num_classes=len(classes)).to(DEVICE)
     
     # 4. LOSS & OPTIMIZER
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-2)
+    class_counts = [30, 26, 35, 31]
+    class_weights = torch.tensor([max(class_counts)/c for c in class_counts], dtype=torch.float32).to(DEVICE)
+    criterion = nn.CrossEntropyLoss(weight=class_weights, label_smoothing=0.1)
+    
+    optimizer = optim.AdamW(model.parameters(), lr=0.001, weight_decay=0.01)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=2)
     
     # 5. TRAINING LOOP
     best_acc = 0.0
+    patience_counter = 0
     Path("models").mkdir(exist_ok=True)
     
     print(f"Starting training for {NUM_EPOCHS} epochs...\n")
@@ -84,8 +90,20 @@ def train():
         # --- Save Best Model ---
         if val_acc > best_acc:
             best_acc = val_acc
+            patience_counter = 0
             torch.save(model.state_dict(), "models/best_model.pth")
             print("  -> Saved best model!")
+        else:
+            patience_counter += 1
+            print(f"  -> No improvement ({patience_counter}/{PATIENCE})")
+            
+        # Update learning rate
+        scheduler.step(val_acc)
+            
+        # Early stopping
+        if patience_counter >= PATIENCE:
+            print(f"\nEarly stopping at epoch {epoch+1} (no improvement for {PATIENCE} epochs)")
+            break
 
     # --- Final Report ---
     model.load_state_dict(torch.load("models/best_model.pth"))

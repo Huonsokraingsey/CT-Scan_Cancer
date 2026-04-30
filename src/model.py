@@ -14,7 +14,9 @@ class ChestCTClassifier(nn.Module):
         for param in self.backbone.parameters():
             param.requires_grad = False
             
-        # Unfreeze the last "block" for fine-tuning
+        # Unfreeze last 2 blocks for fine-tuning
+        for param in self.backbone.layer3.parameters():
+            param.requires_grad = True
         for param in self.backbone.layer4.parameters():
             param.requires_grad = True
             
@@ -24,8 +26,11 @@ class ChestCTClassifier(nn.Module):
         self.backbone.fc = nn.Sequential(
             nn.Linear(num_features, 512),
             nn.ReLU(),
-            nn.Dropout(0.5),  # Prevents overfitting on small medical data
-            nn.Linear(512, num_classes) # Final output layer
+            nn.Dropout(0.6),  # Increased dropout to prevent overfitting
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Dropout(0.4),
+            nn.Linear(256, num_classes) # Final output layer
         )
         
     def forward(self, x):

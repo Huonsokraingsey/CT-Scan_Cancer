@@ -37,7 +37,7 @@ transform = A.Compose([
 def analyze_ct(pil_image):
     """Core inference + Grad-CAM pipeline"""
     if pil_image is None:
-        return None, "⚠️ Please upload a Chest CT scan image.", None
+        return None, "Please upload a Chest CT scan image.", None
 
     # Convert to numpy RGB
     img_np = np.array(pil_image.convert("RGB"))
@@ -71,34 +71,122 @@ def analyze_ct(pil_image):
     # Format outputs
     prob_dict = {cls.replace('.', ' ').title(): float(p) for cls, p in zip(CLASSES, probs)}
     status_text = (
-        f"🔍 **Prediction:** {pred_class.replace('.', ' ').title()}\n"
-        f"📊 **Confidence:** {confidence:.2%}\n"
-        f"⚠️ *Research tool only. Not for clinical diagnosis. Always consult a licensed radiologist.*"
+        f"**Prediction:** {pred_class.replace('.', ' ').title()}\n\n"
+        f"**Confidence:** {confidence:.2%}"
     )
     
     return prob_dict, status_text, overlay_pil
 
 # ================= GRADIO UI =================
-with gr.Blocks(title="Chest CT Cancer Classifier", theme=gr.themes.Soft()) as app:
-    gr.Markdown("# 🩺 AI Chest CT Cancer Classifier")
-    gr.Markdown("Upload a single axial chest CT scan slice to detect and classify potential lung cancer types. **For educational/research purposes only.**")
+custom_css = """
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+body, .gradio-container {
+    background: #0F172A !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+.main-title {
+    text-align: center;
+    font-size: 2rem !important;
+    font-weight: 600;
+    color: #F8FAFC !important;
+    margin-bottom: 0.25rem !important;
+}
+
+.subtitle {
+    text-align: center;
+    font-size: 0.95rem;
+    color: #94A3B8 !important;
+    margin-bottom: 2.5rem !important;
+}
+
+.gr-group, .gr-box {
+    background: #1E293B !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+    border: none !important;
+}
+
+.gr-image {
+    border-radius: 8px !important;
+}
+
+.upload-zone {
+    border: none !important;
+}
+
+.analyze-btn {
+    background: #3B82F6 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+}
+
+.analyze-btn:hover {
+    background: #2563EB !important;
+    transform: translateY(-1px) !important;
+}
+
+.clear-btn {
+    background: #475569 !important;
+    color: #CBD5E1 !important;
+    border: none !important;
+    border-radius: 8px !important;
+}
+
+.warning-box {
+    text-align: center;
+    font-size: 0.75rem;
+    color: #64748B !important;
+    margin-top: 1.5rem;
+    padding: 0 1rem;
+}
+
+.section-header {
+    font-size: 0.9rem !important;
+    font-weight: 500;
+    color: #94A3B8 !important;
+    margin-bottom: 0.75rem !important;
+    padding-left: 0.25rem;
+}
+
+.output-section {
+    min-height: 320px;
+}
+
+.row-spacing {
+    gap: 2.5rem !important;
+}
+"""
+
+theme = gr.themes.Soft(primary_hue="slate", secondary_hue="slate")
+
+with gr.Blocks(title="Chest CT Cancer Classifier") as app:
+    gr.Markdown('<p class="main-title">AI Chest CT Cancer Classifier</p>')
+    gr.Markdown('<p class="subtitle">Upload a chest CT scan to detect and classify lung cancer types</p>')
     
-    with gr.Row():
+    with gr.Row(equal_height=True):
         with gr.Column(scale=1):
-            input_img = gr.Image(type="pil", label="📤 Upload CT Slice", height=300)
-            submit_btn = gr.Button("🔍 Analyze Scan", variant="primary", size="lg")
-            clear_btn = gr.Button("🗑️ Clear", size="sm")
+            gr.Markdown('<p class="section-header">Upload CT Scan</p>')
+            input_img = gr.Image(type="pil", label="", height=280)
+            with gr.Row():
+                submit_btn = gr.Button("Analyze Scan", size="lg", scale=2, variant="primary")
+                clear_btn = gr.Button("Clear", size="md")
             
         with gr.Column(scale=1):
-            output_img = gr.Image(label="🌡️ Grad-CAM Heatmap Overlay", height=300)
-            output_probs = gr.Label(label="📈 Class Probabilities")
+            gr.Markdown('<p class="section-header">Analysis Results</p>')
+            output_img = gr.Image(label="Grad-CAM Heatmap", height=180)
+            output_probs = gr.Label(label="Probability Distribution", show_label=True)
             output_text = gr.Markdown()
-            
-    submit_btn.click(analyze_ct, inputs=[input_img], outputs=[output_probs, output_text, output_img])
-    clear_btn.click(lambda: (None, "⬆️ Upload a CT scan to begin.", None), outputs=[input_img, output_text, output_img])
     
-    gr.Markdown("---\n*Built with PyTorch & ResNet50 | Gradient Descent (Trio Kings) | ITM 360*")
+    gr.Markdown('<p class="warning-box">For educational/research purposes only. Not for clinical diagnosis. Consult a licensed radiologist.</p>')
+    
+    submit_btn.click(analyze_ct, inputs=[input_img], outputs=[output_probs, output_text, output_img])
+    clear_btn.click(lambda: (None, "", None), outputs=[input_img, output_text, output_img])
 
 if __name__ == "__main__":
-    print("💻 Launching local interface at: http://localhost:7860")
-    app.launch()
+    print("Launching local interface at: http://localhost:7860")
+    app.launch(theme=theme, css=custom_css)
